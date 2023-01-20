@@ -1,0 +1,10 @@
+{
+	"camera_id": 0,
+	"image": "base64encoded.jpg",
+	"algorithm_type": 0,
+	"detection_boxes": [
+   	    {"left":0.5, "top":0.5, "width":0.5, "height":0.5, "conf":0.5},
+		{"left":0.5, "top":0.5, "width":0.5, "height":0.5, "conf":0.5},
+   	    {"left":0.5, "top":0.5, "width":0.5, "height":0.5, "conf":0.5}
+	]
+}
