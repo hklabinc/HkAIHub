@@ -11,6 +11,7 @@ from io import BytesIO
 import numpy as np
 
 
+
 ### Path setup in case of Linux
 if platform.system() == 'Linux':        
     print('\033[95m' + "Set path for linux..." + '\033[0m')
@@ -27,8 +28,22 @@ q = queue.Queue()
 weights   = 'weights/od_small_fire_smoke.pt'         if IS_SMALL_YOLOv7_OD else 'weights/od_medium_fire_smoke.pt'   
 weights_c = 'weights/ic_small_default_fire_smoke.pt' if IS_SMALL_YOLOv5_IC else 'weights/ic_medium_default_fire_smoke.pt'   
 
+# url = 'rtsp://admin:init123!!@192.168.0.59:554/SD'
+# url = 'rtsp://admin:init123!!@sean715.iptime.org:554/SD'
+# url = 'rtsp://admin:init123!!@1.237.139.6:554/SD'
+# url = 'rtsp://admin:init123!!@192.168.0.59:554/HD'
+# url = 'rtsp://sonslab:sons123!@hklab-cam02.iptimecam.com:21064/stream_ch00_0'
+# url = 'rtsp://admin:tech0316_@218.145.166.65:554/MOBILE'    # Vtouch Camera
+# url = 'datasets/ONO-9081R_20221024164811.avi'               # Pyeongtak
+# url = 'rtsp://'
+# url = 0
+
+# print('\033[95m' + "Connect to server..." + '\033[0m')
+# comm = VTouchMecComm()
+
 print('\033[95m' + "Initialize Yolo..." + '\033[0m')
 fd = VTouchFireDetector(weights, weights_c, classify=IS_CLASSIFY)      # Set classify=True if want to use second-stage classification
+
 
 
 ## For MQTT #########################################################################################################
@@ -37,23 +52,25 @@ fd = VTouchFireDetector(weights, weights_c, classify=IS_CLASSIFY)      # Set cla
 def on_connect(client, userdata, flags, rc):
     print("rc: " + str(rc))
    
-# (mqttc.subscribe가 잘 되면) 구독(subscribe)을 완료하면 on_subscrbie가 호출됨 (이벤트가 발생하면 호출됨)
+# (mqttc.subscribe가 잘 되면) 구독(subscribe)을 완료하면
+# on_subscrbie가 호출됨 (이벤트가 발생하면 호출됨)
 def on_subscribe(client, obj, mid, granted_qos):
     print("Subscribe complete : " + str(client)+ ", "  + str(mid) + " " + str(granted_qos))
 
-# (mqttc.publish가 잘 되면) 메시지를 publish하면 on_publish실행 (용도: publish를 보내고 난 후 처리를 하고 싶을 때 (사실 이 콜백함수는 잘 쓰진 않는다.))
-def on_publish(client, obj, mid):    
-    print("mid: " + str(mid) + ", " + str(client))
- 
 # 브로커에게 메시지가 도착하면 on_message 실행 (이벤트가 발생하면 호출)
 def on_message(client, obj, msg):
     print(msg.topic + ", " + str(client)+ ", " + str(msg.qos) + ", " + str(msg.payload)[0:100])
 
+    # payload = msg.payload.decode('utf8')
     payload = msg.payload
-    if q.qsize() > MAX_QUEUE_SIZE:          # Prevent queue overflow
-        print('\033[95m' + f'Current queue size of {q.qsize()} is too long, drop frames...' + '\033[0m')    
-        q.queue.clear()
-    q.put(payload)      # Insert the payload to queue
+    # json_obj = json.loads(payload)
+    # addr = json_obj["addr"]
+    # time = json_obj["time"]
+    # type = json_obj["type"]
+    # label = json_obj["label"]
+    # image = json_obj["image"]    
+    # print("Received MQTT msg: ", addr, time, type, label, image[0:50])
+
 
     # global isImage, isEvent          # global로 선언해야    
     # global para_interval, para_scale, para_width, para_height
@@ -67,7 +84,21 @@ def on_message(client, obj, msg):
     #     para_interval = float(command.split("=")[1])
     # elif "scale" in command:
     #     para_scale = float(command.split("=")[1])        
-                       
+
+    
+                   
+    if q.qsize() > MAX_QUEUE_SIZE:          # Prevent queue overflow
+        print('\033[95m' + f'Current queue size of {q.qsize()} is too long, drop frames...' + '\033[0m')    
+        q.queue.clear()
+    q.put(payload)      # Insert the payload to queue
+                
+       
+ 
+# (mqttc.publish가 잘 되면) 메시지를 publish하면 on_publish실행 (이벤트가 발생하면 호출)
+def on_publish(client, obj, mid):
+    # 용도 : publish를 보내고 난 후 처리를 하고 싶을 때
+    # 사실 이 콜백함수는 잘 쓰진 않는다.
+    print("mid: " + str(mid) + ", " + str(client))
  
 # 클라이언트 생성
 mqttc = mqtt.Client()
@@ -76,24 +107,53 @@ mqttc = mqtt.Client()
 # 콜백 함수 할당하기
 mqttc.on_message = on_message
 mqttc.on_connect = on_connect
-mqttc.on_subscribe = on_subscribe
 # mqttc.on_publish = on_publish
+mqttc.on_subscribe = on_subscribe
 
 # 브로커 연결 설정
+# 참고로 브로커를 Cloudmqtt 홈페이지를 사용할 경우
+# 미리 username과 password, topic이 등록 되어있어야함.
 url = "hawkai.hknu.ac.kr"
 port = 8085
 pub_topic = "hawkai/from"  
 sub_topic = "hawkai/query"
-#username = "HONG" 
+#username = "HONG" # Cloud mqtt
 #password = "1234"
   
 # 클라이언트 설정 후 연결 시도
-#mqttc.username_pw_set(username, password)      # username과 password 설정되어 있으면
+#mqttc.username_pw_set(username, password)
 mqttc.connect(host=url, port=port)
-mqttc.subscribe(sub_topic, 0)           # QoS level 0으로 구독 설정, 정상적으로 subscribe 되면 on_subscribe 호출됨
+#mqttc.connect("ictrobot.hknu.ac.kr", 8085)
+ 
+# QoS level 0으로 구독 설정, 정상적으로 subscribe 되면 on_subscribe 호출됨
+mqttc.subscribe(sub_topic, 0)
 mqttc.loop_start()
 #########################################################################################################
 
+
+
+# ### Receiving Thread ###
+# def Receive():
+#     print('\033[95m' + "Start Reveive thread..." + '\033[0m')    
+#     past = time.time()
+#     cap = cv2.VideoCapture(url)
+#     while True :
+#         ret, frame = cap.read()
+#         cv2.waitKey(1)
+
+#         if not(ret):                                # If RTSP stream is lost, reinitialize
+#             st = time.time()
+#             cap = cv2.VideoCapture(url)                 
+#             print('\033[95m' + f'RTSP stream is reinitialized, lost time is {time.time()-st}...' + '\033[0m')    
+#         else:            
+#             if q.qsize() > MAX_QUEUE_SIZE:          # Prevent queue overflow
+#                 print('\033[95m' + f'Current queue size of {q.qsize()} is too long, drop frames...' + '\033[0m')    
+#                 q.queue.clear()
+
+#             now = time.time()        
+#             if now - past >= DETECT_PERIOD:         # for each period
+#                 past = now
+#                 q.put(frame)
 
 ### Processing Thread ### 
 def Process():
@@ -107,7 +167,7 @@ def Process():
             json_obj = json.loads(payload)
             addr = json_obj["addr"]
             timeValue = json_obj["time"]
-            userId = json_obj["type"]       # type에 userId가 적혀있음
+            userId = json_obj["type"]
             # label = json_obj["label"]
             image = json_obj["image"]
             decoded_data = base64.b64decode(image)          # Decode base64 string data
@@ -141,8 +201,10 @@ def Process():
 
 ### Main Thread ###
 if __name__=='__main__':
-    try:         
-        p2 = threading.Thread(target=Process, daemon=True)        # https://stackoverflow.com/questions/49233433/opencv-read-errorh264-0x8f915e0-error-while-decoding-mb-53-20-bytestream         
+    try:
+        # p1 = threading.Thread(target=Receive, daemon=True)       # https://stackoverflow.com/questions/49233433/opencv-read-errorh264-0x8f915e0-error-while-decoding-mb-53-20-bytestream 
+        p2 = threading.Thread(target=Process, daemon=True)        
+        # p1.start()
         p2.start()
         
         while True:

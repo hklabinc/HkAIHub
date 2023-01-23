@@ -1,7 +1,7 @@
-# vtouch_FireDetector
-2022 vtouch FireDetector
+# HkAIHub
+2023 HkAIHub
 
-test_firedetector.py로 실행
+main_AI_hub.py로 실행
 0.1초 정도 간격으로 Object detection -> Image classification 두 단계 동작 
 
 - 환경
@@ -12,20 +12,18 @@ test_firedetector.py로 실행
   - Docker (python:3.9-slim) 환경에서 동작 확인
 
 - 실행
-  1) git clone https://github.com/hklabinc/vtouch_FireDetector.git
+  1) git clone https://github.com/hklabinc/HkAIHub.git
   2) pip install -r requirements.txt
-  3) python vtouch_mec_wsserver_test.py
-  4) python test_firedetector.py
+  3) python3 main_AI_hub.py
 
 - 파일
-  - test_firedetector : fire detector 실행
+  - main_AI_hub : fire detector 실행
   - vtouch_firedetector : 메인 fire detector 동작
   - Yolov7 및 v5 소스코드들이 data, models, utils 폴더에 있음 (몇몇 파일 수정됨)
   - weights 폴더에 개발한 od와 ic 모델 pt 파일이 있음
      - od_fire_smoke.pt : yolov7 기반 obeject detection (fire, smoke 검출)
      - ic_default_fire_smoke.pt: yolov5m 기반 image classification(0: default, 1: fire, 2: smoke)
-  - vtouch_mec_wsserver_test: 서버 실행, 박스를 그리기 위해 기존 코드 약간 수정
-
+  
 - 옵션 (test_firedetector에서)
   - IS_CLASSIFY : 두번째 IC 사용 여부 선택 (True일 경우 image classification 추가 사용, False일 경우 object detection만 사용)
   - IS_SMALL_YOLOv7_OD : YOLOv7 Object Detection의 Small 모델 사용 여부 (True일 경우 Small 모델 사용, False일 경우 Medium 모델 사용)
